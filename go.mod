@@ -1,4 +1,4 @@
-module gutils
+module github.com/shaovie/gutils
 
 go 1.24.0
 
