@@ -11,7 +11,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func RandomString(n int) string {
+func RandomStr(n int) string {
 	if n < 1 {
 		return ""
 	}
