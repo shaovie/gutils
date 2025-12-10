@@ -15,5 +15,5 @@ func main() {
 	fmt.Printf("code = %d\n", code)
 	ilog.Init("")
 	isqlite.New("", "")
-	fmt.Printf("random string = %s\n", gutils.RandomString(12))
+	fmt.Printf("random string = %s\n", gutils.RandomStr(12))
 }

@@ -51,16 +51,7 @@ func (c *DBConn) Insert(sql string, vals ...any) (int64, error) {
 	}
 	return res.LastInsertId()
 }
-func (c *DBConn) Exec(sql string) error {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-	_, err := c.db.Exec(sql)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (c *DBConn) Update(sql string, vals ...any) error {
+func (c *DBConn) Exec(sql string, vals ...any) error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	stmt, err := c.db.Prepare(sql)
