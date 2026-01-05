@@ -2,6 +2,7 @@ package ihttp
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net"
@@ -11,8 +12,9 @@ import (
 )
 
 // 全局复用 Transport（连接池核心），避免每次创建新连接
-var DefaultTransport = &http.Transport{
-	MaxIdleConns:        64,               // 最大空闲连接数（默认2）
+var sharedTransport = &http.Transport{
+	MaxIdleConns:        4, // 最大空闲连接数（默认2）
+	MaxIdleConnsPerHost: 16,
 	IdleConnTimeout:     60 * time.Second, // 空闲连接超时时间（默认无）
 	MaxConnsPerHost:     10,               // 每个主机最大并发连接数
 	TLSHandshakeTimeout: 5 * time.Second,  // TLS握手超时
@@ -21,6 +23,15 @@ var DefaultTransport = &http.Transport{
 		Timeout:   5 * time.Second,  // 拨号超时
 		KeepAlive: 30 * time.Second, // TCP保活时间
 	}).DialContext,
+}
+var sharedClient = &http.Client{
+	Transport: sharedTransport,
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 5 { // 限制重定向次数（默认10次，避免无限重定向）
+			return errors.New("too many redirects (max 5)")
+		}
+		return nil
+	},
 }
 
 func Get(link string, timeout time.Duration, headers map[string]string) (int, []byte, error) {
@@ -33,22 +44,13 @@ func Delete(link string, timeout time.Duration, headers map[string]string) (int,
 	return _do(http.MethodDelete, link, nil, timeout, headers)
 }
 func Put(link string, timeout time.Duration, headers map[string]string) (int, []byte, error) {
-	return _do(http.MethodDelete, link, nil, timeout, headers)
+	return _do(http.MethodPut, link, nil, timeout, headers)
 }
 func _do(method, link string, pl []byte, timeout time.Duration, headers map[string]string) (int, []byte, error) {
-	client := &http.Client{
-		Timeout:   timeout,
-		Transport: DefaultTransport,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 5 { // 限制重定向次数（默认10次，避免无限重定向）
-				return errors.New("too many redirects (max 5)")
-			}
-			return nil
-		},
-	}
-
 	buffer := bytes.NewBuffer(pl)
-	req, err := http.NewRequest(method, link, buffer)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, method, link, buffer)
 	if err != nil {
 		return 0, nil, errors.New("create request failed: " + link + ", err: " + err.Error())
 	}
@@ -56,7 +58,7 @@ func _do(method, link string, pl []byte, timeout time.Duration, headers map[stri
 		req.Header.Set(k, v)
 	}
 
-	resp, err := client.Do(req)
+	resp, err := sharedClient.Do(req)
 	defer func() {
 		if resp != nil && resp.Body != nil {
 			_ = resp.Body.Close() // 忽略关闭错误（核心是确保关闭）

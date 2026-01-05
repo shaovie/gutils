@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shaovie/gutils/gutils"
 	"github.com/shaovie/gutils/ihttp"
 	"github.com/shaovie/gutils/ilog"
 	"github.com/shaovie/gutils/isqlite"
-	"github.com/shaovie/gutils/gutils"
 )
 
 func main() {
