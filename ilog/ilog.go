@@ -37,11 +37,11 @@ func Init(dir string) error {
 	warningL = &iLog{name: "warning"}
 	return os.MkdirAll(logDir, 0755)
 }
-func Debug(format string, v ...interface{})   { debugL.write(format, v...) }
-func Rinfo(format string, v ...interface{})   { rinfoL.write(format, v...) }
-func Error(format string, v ...interface{})   { errorL.write(format, v...) }
-func Fatal(format string, v ...interface{})   { fatalL.write(format, v...) }
-func Warning(format string, v ...interface{}) { warningL.write(format, v...) }
+func Debug(format string, v ...any)   { debugL.write(format, v...) }
+func Rinfo(format string, v ...any)   { rinfoL.write(format, v...) }
+func Error(format string, v ...any)   { errorL.write(format, v...) }
+func Fatal(format string, v ...any)   { fatalL.write(format, v...) }
+func Warning(format string, v ...any) { warningL.write(format, v...) }
 
 func (l *iLog) check() error {
 	t := time.Now()
@@ -71,7 +71,7 @@ func (l *iLog) close() {
 	l.f = nil
 	l.l = nil
 }
-func (l *iLog) write(format string, v ...interface{}) {
+func (l *iLog) write(format string, v ...any) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
 
