@@ -42,12 +42,12 @@ func (c *DBConn) Insert(sql string, vals ...any) (int64, error) {
 	defer c.mtx.Unlock()
 	stmt, err := c.db.Prepare(sql)
 	if err != nil {
-		return 0, errors.New(sql + " prepare failed! " + err.Error())
+		return 0, errors.New(sql + " prepare err: " + err.Error())
 	}
 	defer stmt.Close()
 	res, err := stmt.Exec(vals...)
 	if err != nil {
-		return 0, errors.New(sql + " exec failed! " + err.Error())
+		return 0, errors.New(sql + " exec err: " + err.Error())
 	}
 	return res.LastInsertId()
 }
@@ -56,12 +56,12 @@ func (c *DBConn) Exec(sql string, vals ...any) error {
 	defer c.mtx.Unlock()
 	stmt, err := c.db.Prepare(sql)
 	if err != nil {
-		return err
+		return errors.New(sql + " prepare err: " + err.Error())
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(vals...)
 	if err != nil {
-		return err
+		return errors.New(sql + " exec err: " + err.Error())
 	}
 	return nil
 }
@@ -70,12 +70,12 @@ func (c *DBConn) Query(query string, vals ...any) ([]map[string]string, error) {
 	defer c.mtx.RUnlock()
 	stmt, err := c.db.Prepare(query)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(query + " prepare err: " + err.Error())
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(vals...)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(query + " query err: " + err.Error())
 	}
 	cols, _ := rows.Columns()
 	results := make([]map[string]string, 0)
@@ -98,7 +98,7 @@ func (c *DBConn) Query(query string, vals ...any) ([]map[string]string, error) {
 func (c *DBConn) QueryOne(query string, vals ...any) (map[string]string, error) {
 	results, err := c.Query(query, vals...)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(query + " qeury err: " + err.Error())
 	}
 	if len(results) > 0 {
 		return results[0], nil
