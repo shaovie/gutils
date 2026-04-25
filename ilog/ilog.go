@@ -78,5 +78,9 @@ func (l *iLog) write(format string, v ...any) {
 	if err := l.check(); err != nil {
 		return
 	}
+	if len(v) == 0 {
+		l.l.Print(format)
+		return
+	}
 	l.l.Printf(format, v...)
 }
