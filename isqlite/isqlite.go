@@ -3,32 +3,34 @@ package isqlite
 import (
 	"database/sql"
 	"errors"
-	_ "github.com/mattn/go-sqlite3"
 	"os"
-	"path"
+	"path/filepath"
 	"sync"
+
+	_ "modernc.org/sqlite"
 )
 
 type DBConn struct {
 	file string
 	db   *sql.DB
-	mtx  sync.RWMutex // just for sqlite3
+	mtx  sync.RWMutex
 }
 
 func New(f, pragma string) (*DBConn, error) {
 	if f == "" {
 		return nil, errors.New("sqlite filename is empty")
 	}
-	if err := os.MkdirAll(path.Dir(f), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(f), 0755); err != nil {
 		return nil, errors.New("mkdir sqlite dir failed! " + err.Error())
 	}
-	dbR, err := sql.Open("sqlite3", f)
+	dbR, err := sql.Open("sqlite", f)
 	if err != nil {
 		return nil, errors.New("sqlite open failed! " + err.Error())
 	}
 	if pragma != "" {
 		_, err = dbR.Exec(pragma)
 		if err != nil {
+			_ = dbR.Close()
 			return nil, errors.New("sqlite PRAGMA set fail:" + err.Error())
 		}
 	}
@@ -37,6 +39,13 @@ func New(f, pragma string) (*DBConn, error) {
 		file: f,
 	}, nil
 }
+
+func (c *DBConn) Close() error {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	return c.db.Close()
+}
+
 func (c *DBConn) Insert(sql string, vals ...any) (int64, error) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
